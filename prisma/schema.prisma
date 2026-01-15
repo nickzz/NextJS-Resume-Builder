@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Resume {
+  id            String        @id @default(cuid())
+  fullName      String
+  position      String
+  address       String
+  phone         String
+  email         String?
+  linkedin      String?
+  github        String?
+  profileImage  String?
+  careerSummary String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  certificates  Certificate[]
+  educations    Education[]
+  experiences   Experience[]
+  languages     Language[]
+  references    Reference[]
+  skills        Skill[]
+}
+
+model Experience {
+  id          String @id @default(cuid())
+  resumeId    String
+  title       String
+  company     String
+  startDate   String
+  endDate     String
+  description String
+  resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id         String @id @default(cuid())
+  resumeId   String
+  degree     String
+  university String
+  startYear  String
+  endYear    String
+  resume     Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id        String @id @default(cuid())
+  resumeId  String
+  skillName String
+  resume    Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Certificate {
+  id       String @id @default(cuid())
+  resumeId String
+  certName String
+  issuedBy String
+  year     String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Language {
+  id          String @id @default(cuid())
+  resumeId    String
+  language    String
+  proficiency String
+  resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Reference {
+  id       String @id @default(cuid())
+  resumeId String
+  refName  String
+  company  String
+  contact  String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
