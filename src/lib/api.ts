@@ -1,35 +1,66 @@
+const fetchOptions: RequestInit = {
+  credentials: "same-origin",
+  headers: {
+    "Content-Type": "application/json",
+  },
+};
+
 export async function apiGet(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch data");
-  return res.json();
+  const res = await fetch(url, {
+    ...fetchOptions,
+    method: "GET",
+  });
+
+  return handleResponse(res);
 }
 
-export async function apiPost<TResponse, TRequest>(url: string, data: any) : Promise<TResponse> {
+export async function apiPost<TResponse>(url: string, data: any): Promise<TResponse> {
   const res = await fetch(url, {
+    ...fetchOptions,
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to create data");
-  return res.json();
+
+  return handleResponse(res);
 }
 
-export async function apiPut<TResponse, TRequest>(url: string, data: any) : Promise<TResponse> {
+export async function apiPut<TResponse>(url: string, data: any): Promise<TResponse> {
   const res = await fetch(url, {
+    ...fetchOptions,
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to update data");
-  return res.json();
+
+  return handleResponse(res);
 }
 
 export async function apiDelete(url: string, id: string) {
   const res = await fetch(url, {
+    ...fetchOptions,
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   });
-  if (!res.ok) throw new Error("Failed to delete data");
+
+  return handleResponse(res);
+}
+
+/**
+ * Centered response handler to manage errors and authentication
+ */
+async function handleResponse(res: Response) {
+  // If the server returns 401, the session is invalid or expired
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      console.warn("Unauthorized. Redirecting to login...");
+      // window.location.href = "/login";
+    }
+    throw new Error("Unauthorized");
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || "An API error occurred");
+  }
+
   return res.json();
 }

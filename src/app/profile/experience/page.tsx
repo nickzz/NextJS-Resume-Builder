@@ -61,7 +61,7 @@ export default function ExperienceForm() {
       {/* Back Navigation */}
       <div className="w-full max-w-3xl mb-4">
         <Link
-          href="/admin"
+          href="/profile"
           className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition"
         >
           <svg

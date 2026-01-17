@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 
-export default function CertificateForm() {
+export default function ReferenceForm() {
   const [data, setData] = useState<any[]>([]);
   const [form, setForm] = useState({
     id: "",
     resumeId: "",
-    certName: "",
-    issuedBy: "",
-    year: "",
+    refName: "",
+    company: "",
+    contact: "",
   });
 
   useEffect(() => {
@@ -19,18 +19,18 @@ export default function CertificateForm() {
   }, []);
 
   async function fetchData() {
-    const res = await apiGet("/api/certificate");
+    const res = await apiGet("/api/reference");
     setData(res);
   }
 
   async function handleSubmit(e: any) {
     e.preventDefault();
-    if (!form.certName.trim()) return alert("Certificate name is required");
+    if (!form.refName.trim()) return alert("Reference name is required");
 
-    if (form.id) await apiPut("/api/certificate", form);
-    else await apiPost("/api/certificate", form);
+    if (form.id) await apiPut("/api/reference", form);
+    else await apiPost("/api/reference", form);
 
-    setForm({ id: "", resumeId: "", certName: "", issuedBy: "", year: "" });
+    setForm({ id: "", resumeId: "", refName: "", company: "", contact: "" });
     fetchData();
   }
 
@@ -39,18 +39,18 @@ export default function CertificateForm() {
   }
 
   async function handleDelete(id: string) {
-    if (confirm("Delete this certificate?")) {
-      await apiDelete("/api/certificate", id);
+    if (confirm("Delete this reference?")) {
+      await apiDelete("/api/reference", id);
       fetchData();
     }
   }
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      {/* Back Navigation */}
+      {/* 🔙 Back Navigation */}
       <div className="w-full max-w-3xl mb-4">
         <Link
-          href="/admin"
+          href="/profile"
           className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition"
         >
           <svg
@@ -67,81 +67,81 @@ export default function CertificateForm() {
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">Certificates</h1>
+      {/* 🧩 Title */}
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">References</h1>
 
-      {/* Form Section */}
+      {/* 📝 Reference Form */}
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-md border border-gray-100 space-y-4"
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700">Certificate Name</label>
+          <label className="block text-sm font-medium text-gray-700">Reference Name</label>
           <input
             type="text"
-            value={form.certName}
-            onChange={(e) => setForm({ ...form, certName: e.target.value })}
+            value={form.refName}
+            onChange={(e) => setForm({ ...form, refName: e.target.value })}
             className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. AWS Certified Developer"
+            placeholder="e.g. John Doe"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Issued By</label>
+          <label className="block text-sm font-medium text-gray-700">Company</label>
           <input
             type="text"
-            value={form.issuedBy}
-            onChange={(e) => setForm({ ...form, issuedBy: e.target.value })}
+            value={form.company}
+            onChange={(e) => setForm({ ...form, company: e.target.value })}
             className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. Amazon Web Services"
+            placeholder="e.g. Fujitsu Malaysia"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Year</label>
+          <label className="block text-sm font-medium text-gray-700">Contact Info</label>
           <input
             type="text"
-            value={form.year}
-            onChange={(e) => setForm({ ...form, year: e.target.value })}
+            value={form.contact}
+            onChange={(e) => setForm({ ...form, contact: e.target.value })}
             className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. 2024"
+            placeholder="e.g. john.doe@company.com / +6012-3456789"
           />
         </div>
 
         <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition"
           type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition"
         >
-          {form.id ? "Update Certificate" : "Add Certificate"}
+          {form.id ? "Update Reference" : "Add Reference"}
         </button>
       </form>
 
-      {/* Certificate List */}
+      {/* 📋 Reference List */}
       <div className="w-full max-w-3xl mt-10">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Existing Certificates</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">Existing References</h2>
         <ul className="space-y-3">
           {data.length === 0 ? (
-            <p className="text-gray-500 text-sm">No certificates added yet.</p>
+            <p className="text-gray-500 text-sm">No references added yet.</p>
           ) : (
-            data.map((cert) => (
+            data.map((ref) => (
               <li
-                key={cert.id}
+                key={ref.id}
                 className="bg-white p-4 shadow-sm rounded-md border flex justify-between items-start"
               >
                 <div>
-                  <p className="font-semibold text-gray-800">{cert.certName}</p>
-                  <p className="text-sm text-gray-600">
-                    {cert.issuedBy} ({cert.year})
-                  </p>
+                  <p className="font-semibold text-gray-800">{ref.refName}</p>
+                  <p className="text-sm text-gray-600">{ref.company}</p>
+                  <p className="text-xs text-gray-500 mt-1">{ref.contact}</p>
                 </div>
                 <div className="flex gap-3 text-sm mt-1">
                   <button
-                    onClick={() => handleEdit(cert)}
+                    onClick={() => handleEdit(ref)}
                     className="text-blue-600 hover:text-blue-700"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(cert.id)}
+                    onClick={() => handleDelete(ref.id)}
                     className="text-red-600 hover:text-red-700"
                   >
                     Delete

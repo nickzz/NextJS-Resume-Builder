@@ -59,7 +59,7 @@ body {
 
   /* Hide UI elements not part of the resume when printing */
   button,
-  a[href^="/admin"] {
+  a[href^="/profile"] {
     display: none !important;
   }
 }
