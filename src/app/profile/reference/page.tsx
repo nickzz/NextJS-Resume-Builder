@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { ArrowLeft, UserCheck, Trash2, Edit3, Plus, Save, Mail, Phone, Briefcase } from "lucide-react";
+import Link from "next/link";
 
 export default function ReferenceForm() {
   const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     id: "",
-    resumeId: "",
     refName: "",
     company: "",
-    contact: "",
+    position: "",
+    phoneNo: "",
+    email: "",
   });
 
   useEffect(() => {
@@ -19,139 +22,165 @@ export default function ReferenceForm() {
   }, []);
 
   async function fetchData() {
-    const res = await apiGet("/api/reference");
-    setData(res);
+    try {
+      const res = await apiGet("/api/reference");
+      setData(res);
+    } catch (err) {
+      console.error("Fetch failed", err);
+    }
   }
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.refName.trim()) return alert("Reference name is required");
+    setLoading(true);
 
-    if (form.id) await apiPut("/api/reference", form);
-    else await apiPost("/api/reference", form);
-
-    setForm({ id: "", resumeId: "", refName: "", company: "", contact: "" });
-    fetchData();
+    try {
+      if (form.id) {
+        await apiPut("/api/reference", form);
+      } else {
+        const { id, ...createData } = form;
+        await apiPost("/api/reference", createData);
+      }
+      
+      setForm({ id: "", refName: "", company: "", position: "", phoneNo: "", email: "" });
+      fetchData();
+    } catch (err) {
+      alert("Save failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleEdit(item: any) {
     setForm(item);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleDelete(id: string) {
-    if (confirm("Delete this reference?")) {
+    if (!confirm("Remove this reference?")) return;
+    try {
       await apiDelete("/api/reference", id);
       fetchData();
+    } catch (err) {
+      alert("Delete failed");
     }
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      {/* 🔙 Back Navigation */}
-      <div className="w-full max-w-3xl mb-4">
-        <Link
-          href="/profile"
-          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className="w-4 h-4"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Admin
-        </Link>
+    <main className="min-h-screen bg-[#F8FAFC] pb-20">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/profile" className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-medium transition">
+            <ArrowLeft size={18} /> <span>Back to Profile</span>
+          </Link>
+          <h1 className="text-lg font-bold text-slate-800">Professional References</h1>
+          <div className="w-24"></div>
+        </div>
       </div>
 
-      {/* 🧩 Title */}
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">References</h1>
+      <div className="max-w-6xl mx-auto px-6 mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        {/* Form Panel */}
+        <div className="lg:col-span-5">
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-24">
+            <div className="flex items-center gap-2 mb-6 text-blue-600">
+              <Plus size={20} />
+              <h2 className="font-bold">{form.id ? "Edit Reference" : "Add New Reference"}</h2>
+            </div>
 
-      {/* 📝 Reference Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-md border border-gray-100 space-y-4"
-      >
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Reference Name</label>
-          <input
-            type="text"
-            value={form.refName}
-            onChange={(e) => setForm({ ...form, refName: e.target.value })}
-            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. John Doe"
-          />
-        </div>
+            <div className="space-y-4">
+              <InputField label="Full Name" value={form.refName} onChange={(v: string) => setForm({...form, refName: v})} placeholder="e.g. Jane Smith" />
+              <InputField label="Position" value={form.position} onChange={(v: string) => setForm({...form, position: v})} placeholder="e.g. Senior Manager" />
+              <InputField label="Company" value={form.company} onChange={(v: string) => setForm({...form, company: v})} placeholder="e.g. Tech Solutions Inc." />
+              
+              <div className="grid grid-cols-1 gap-4">
+                <InputField label="Email Address" value={form.email} onChange={(v: string) => setForm({...form, email: v})} placeholder="jane.smith@example.com" />
+                <InputField label="Phone Number" value={form.phoneNo} onChange={(v: string) => setForm({...form, phoneNo: v})} placeholder="+6012-3456789" />
+              </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Company</label>
-          <input
-            type="text"
-            value={form.company}
-            onChange={(e) => setForm({ ...form, company: e.target.value })}
-            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. Fujitsu Malaysia"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Contact Info</label>
-          <input
-            type="text"
-            value={form.contact}
-            onChange={(e) => setForm({ ...form, contact: e.target.value })}
-            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. john.doe@company.com / +6012-3456789"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition"
-        >
-          {form.id ? "Update Reference" : "Add Reference"}
-        </button>
-      </form>
-
-      {/* 📋 Reference List */}
-      <div className="w-full max-w-3xl mt-10">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Existing References</h2>
-        <ul className="space-y-3">
-          {data.length === 0 ? (
-            <p className="text-gray-500 text-sm">No references added yet.</p>
-          ) : (
-            data.map((ref) => (
-              <li
-                key={ref.id}
-                className="bg-white p-4 shadow-sm rounded-md border flex justify-between items-start"
+              <button
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2 mt-4"
               >
-                <div>
-                  <p className="font-semibold text-gray-800">{ref.refName}</p>
-                  <p className="text-sm text-gray-600">{ref.company}</p>
-                  <p className="text-xs text-gray-500 mt-1">{ref.contact}</p>
+                {loading ? "Saving..." : <><Save size={18}/> {form.id ? "Update" : "Save Reference"}</>}
+              </button>
+              
+              {form.id && (
+                <button type="button" onClick={() => setForm({id: "", refName: "", company: "", position: "", phoneNo: "", email: ""})} className="w-full text-slate-500 text-sm font-medium py-2">
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* List Panel */}
+        <div className="lg:col-span-7">
+          <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <UserCheck size={22} className="text-blue-600" /> Reference List
+          </h2>
+
+          <div className="grid grid-cols-1 gap-4">
+            {data.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center text-slate-400">
+                No references added yet.
+              </div>
+            ) : (
+              data.map((ref) => (
+                <div key={ref.id} className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow group relative">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{ref.refName}</h3>
+                        <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
+                          <Briefcase size={14} className="text-slate-400" />
+                          <span>{ref.position} at {ref.company}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                          <Mail size={14} />
+                          <span>{ref.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                          <Phone size={14} />
+                          <span>{ref.phoneNo}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEdit(ref)} className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition">
+                        <Edit3 size={18} />
+                      </button>
+                      <button onClick={() => handleDelete(ref.id)} className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-3 text-sm mt-1">
-                  <button
-                    onClick={() => handleEdit(ref)}
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(ref.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </main>
+  );
+}
+
+function InputField({ label, value, onChange, placeholder }: any) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">{label}</label>
+      <input
+        type="text"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+      />
+    </div>
   );
 }

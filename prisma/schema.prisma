@@ -47,6 +47,8 @@ model Experience {
   startDate   String
   endDate     String
   description String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
@@ -57,13 +59,18 @@ model Education {
   university String
   startYear  String
   endYear    String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
   resume     Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
 model Skill {
   id        String @id @default(cuid())
   resumeId  String
+  skillType String
   skillName String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   resume    Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
@@ -72,7 +79,10 @@ model Certificate {
   resumeId String
   certName String
   issuedBy String
-  year     String
+  issuedDate   String
+  expiryDate  String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
@@ -81,6 +91,8 @@ model Language {
   resumeId    String
   language    String
   proficiency String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }
 
@@ -89,6 +101,10 @@ model Reference {
   resumeId String
   refName  String
   company  String
-  contact  String
+  phoneNo  String
+  email    String
+  position String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 }

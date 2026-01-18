@@ -1,30 +1,73 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
+
+async function getResumeId(userId: string) {
+  const resume = await prisma.resume.findUnique({
+    where: { userId },
+  });
+  return resume?.id;
+}
 
 export async function GET() {
-  const data = await prisma.skill.findMany();
-  return NextResponse.json(data);
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const resumeId = await getResumeId((session.user as any).id);
+    const data = await prisma.skill.findMany({
+      where: { resumeId },
+    });
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // 🚫 Remove ID if accidentally passed from frontend
-  const { id, ...cleanData } = body;
+  try {
+    const body = await req.json();
+    const { id, ...cleanData } = body;
+    const resumeId = await getResumeId((session.user as any).id);
 
-  const created = await prisma.skill.create({ data: cleanData });
-  return NextResponse.json(created);
+    if (!resumeId) return NextResponse.json({ error: "No Resume found" }, { status: 400 });
+
+    const created = await prisma.skill.create({ 
+      data: { ...cleanData, resumeId } 
+    });
+    return NextResponse.json(created);
+  } catch (error) {
+    return NextResponse.json({ error: "Create failed" }, { status: 500 });
+  }
 }
 
 export async function PUT(req: Request) {
-  const body = await req.json();
-  const { id, ...rest } = body;
-  const updated = await prisma.skill.update({ where: { id }, data: rest });
-  return NextResponse.json(updated);
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const body = await req.json();
+    const { id, resumeId, ...rest } = body;
+    const updated = await prisma.skill.update({ where: { id }, data: rest });
+    return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: Request) {
-  const { id } = await req.json();
-  await prisma.skill.delete({ where: { id } });
-  return NextResponse.json({ message: "Skill deleted" });
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const { id } = await req.json();
+    await prisma.skill.delete({ where: { id } });
+    return NextResponse.json({ message: "Skill deleted" });
+  } catch (error) {
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
 }

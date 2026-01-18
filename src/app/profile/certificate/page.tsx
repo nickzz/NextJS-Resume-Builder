@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { ArrowLeft, Award, Calendar, Trash2, Edit3, Plus, Save, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 export default function CertificateForm() {
   const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     id: "",
-    resumeId: "",
     certName: "",
     issuedBy: "",
-    year: "",
+    issuedDate: "",
+    expiryDate: "",
   });
 
   useEffect(() => {
@@ -19,139 +21,163 @@ export default function CertificateForm() {
   }, []);
 
   async function fetchData() {
-    const res = await apiGet("/api/certificate");
-    setData(res);
+    try {
+      const res = await apiGet("/api/certificate");
+      setData(res);
+    } catch (err) {
+      console.error("Fetch failed", err);
+    }
   }
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.certName.trim()) return alert("Certificate name is required");
+    setLoading(true);
 
-    if (form.id) await apiPut("/api/certificate", form);
-    else await apiPost("/api/certificate", form);
-
-    setForm({ id: "", resumeId: "", certName: "", issuedBy: "", year: "" });
-    fetchData();
+    try {
+      if (form.id) {
+        await apiPut("/api/certificate", form);
+      } else {
+        const { id, ...createData } = form;
+        await apiPost("/api/certificate", createData);
+      }
+      
+      setForm({ id: "", certName: "", issuedBy: "", issuedDate: "", expiryDate: "" });
+      fetchData();
+    } catch (err) {
+      alert("Save failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleEdit(item: any) {
     setForm(item);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleDelete(id: string) {
-    if (confirm("Delete this certificate?")) {
+    if (!confirm("Remove this certificate?")) return;
+    try {
       await apiDelete("/api/certificate", id);
       fetchData();
+    } catch (err) {
+      alert("Delete failed");
     }
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      {/* Back Navigation */}
-      <div className="w-full max-w-3xl mb-4">
-        <Link
-          href="/profile"
-          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className="w-4 h-4"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Admin
-        </Link>
+    <main className="min-h-screen bg-[#F8FAFC] pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/profile" className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-medium transition">
+            <ArrowLeft size={18} /> <span>Back to Profile</span>
+          </Link>
+          <h1 className="text-lg font-bold text-slate-800">Certificates</h1>
+          <div className="w-24"></div>
+        </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">Certificates</h1>
+      <div className="max-w-5xl mx-auto px-6 mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        {/* Form Panel */}
+        <div className="lg:col-span-5">
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-24">
+            <div className="flex items-center gap-2 mb-6 text-blue-600">
+              <Plus size={20} />
+              <h2 className="font-bold">{form.id ? "Edit Certificate" : "Add Certificate"}</h2>
+            </div>
 
-      {/* Form Section */}
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-md border border-gray-100 space-y-4"
-      >
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Certificate Name</label>
-          <input
-            type="text"
-            value={form.certName}
-            onChange={(e) => setForm({ ...form, certName: e.target.value })}
-            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. AWS Certified Developer"
-          />
-        </div>
+            <div className="space-y-4">
+              <InputField label="Certificate Name" value={form.certName} onChange={(v: string) => setForm({...form, certName: v})} placeholder="AWS Certified Solutions Architect" />
+              <InputField label="Issuing Organization" value={form.issuedBy} onChange={(v: string) => setForm({...form, issuedBy: v})} placeholder="Amazon Web Services" />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <InputField label="Issued Date" value={form.issuedDate} onChange={(v: string) => setForm({...form, issuedDate: v})} placeholder="Jan 2024" />
+                <InputField label="Expiry Date" value={form.expiryDate} onChange={(v: string) => setForm({...form, expiryDate: v})} placeholder="Jan 2027 (or N/A)" />
+              </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Issued By</label>
-          <input
-            type="text"
-            value={form.issuedBy}
-            onChange={(e) => setForm({ ...form, issuedBy: e.target.value })}
-            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. Amazon Web Services"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Year</label>
-          <input
-            type="text"
-            value={form.year}
-            onChange={(e) => setForm({ ...form, year: e.target.value })}
-            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. 2024"
-          />
-        </div>
-
-        <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition"
-          type="submit"
-        >
-          {form.id ? "Update Certificate" : "Add Certificate"}
-        </button>
-      </form>
-
-      {/* Certificate List */}
-      <div className="w-full max-w-3xl mt-10">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800">Existing Certificates</h2>
-        <ul className="space-y-3">
-          {data.length === 0 ? (
-            <p className="text-gray-500 text-sm">No certificates added yet.</p>
-          ) : (
-            data.map((cert) => (
-              <li
-                key={cert.id}
-                className="bg-white p-4 shadow-sm rounded-md border flex justify-between items-start"
+              <button
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2 mt-4"
               >
-                <div>
-                  <p className="font-semibold text-gray-800">{cert.certName}</p>
-                  <p className="text-sm text-gray-600">
-                    {cert.issuedBy} ({cert.year})
-                  </p>
+                {loading ? "Saving..." : <><Save size={18}/> {form.id ? "Update Record" : "Save Certificate"}</>}
+              </button>
+              
+              {form.id && (
+                <button type="button" onClick={() => setForm({id: "", certName: "", issuedBy: "", issuedDate: "", expiryDate: ""})} className="w-full text-slate-500 text-sm font-medium py-2">
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* List Panel */}
+        <div className="lg:col-span-7">
+          <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <ShieldCheck size={22} className="text-blue-600" /> Credential Wallet
+          </h2>
+
+          <div className="space-y-6">
+            {data.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center text-slate-400">
+                No certificates added yet.
+              </div>
+            ) : (
+              data.map((cert) => (
+                <div key={cert.id} className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow group relative">
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-4">
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-xl h-fit">
+                        <Award size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{cert.certName}</h3>
+                        <p className="text-slate-600 font-medium">{cert.issuedBy}</p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400 mt-2">
+                          <div className="flex items-center gap-1">
+                            <Calendar size={14} />
+                            <span>Issued: {cert.issuedDate}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <ShieldCheck size={14} />
+                            <span>Expires: {cert.expiryDate || "N/A"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEdit(cert)} className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition">
+                        <Edit3 size={18} />
+                      </button>
+                      <button onClick={() => handleDelete(cert.id)} className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-3 text-sm mt-1">
-                  <button
-                    onClick={() => handleEdit(cert)}
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(cert.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </main>
+  );
+}
+
+function InputField({ label, value, onChange, placeholder }: any) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">{label}</label>
+      <input
+        type="text"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+      />
+    </div>
   );
 }
