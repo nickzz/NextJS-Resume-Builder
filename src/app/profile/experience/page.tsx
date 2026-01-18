@@ -10,6 +10,7 @@ const EditorComponent = dynamic(() => import("@/components/TiptapEditor"), { ssr
 
 export default function ExperienceForm() {
   const [data, setData] = useState<any[]>([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     id: "",
@@ -101,6 +102,45 @@ export default function ExperienceForm() {
     }
   }
 
+  async function handleAiOptimize() {
+    if (!form.description || !form.title) {
+      return alert("Please enter a Job Title and some description first.");
+    }
+
+    setIsAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "experience",
+          content: form.description,
+          position: form.title
+        }),
+      });
+
+      const data = await res.json();
+      console.log(data)
+
+      if (data.suggestion) {
+        // 1. Clean the suggestion (remove any markdown formatting like ** or \n)
+        const cleanSuggestion = data.suggestion.replace(/\n/g, "");
+
+        // 2. Convert the semicolon string into HTML List Items
+        const items = cleanSuggestion.split(';').filter((i: string) => i.trim() !== "");
+        const htmlList = `<ul>${items.map((i: string) => `<li>${i.trim()}</li>`).join('')}</ul>`;
+
+        // 3. Update the form
+        setForm({ ...form, description: htmlList });
+      }
+    } catch (err) {
+      console.error("AI Error:", err);
+      alert("AI optimization failed.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#F8FAFC] pb-20">
       {/* Sticky Header */}
@@ -133,7 +173,7 @@ export default function ExperienceForm() {
                 <InputField label="End Date" value={form.endDate} onChange={(v: any) => setForm({ ...form, endDate: v })} placeholder="Present" />
               </div>
 
-              <div>
+              {/* <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Key Responsibilities
                 </label>
@@ -142,6 +182,38 @@ export default function ExperienceForm() {
                   content={form.description}
                   onChange={(html) => setForm({ ...form, description: html })}
                 />
+              </div> */}
+              <div className="pt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Key Responsibilities
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAiOptimize}
+                    disabled={isAiLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200 transition-all disabled:opacity-50"
+                  >
+                    {isAiLoading ? (
+                      <span className="animate-pulse">Optimizing...</span>
+                    ) : (
+                      <>
+                        <span className="text-sm">✨</span> Optimize with AI
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="prose prose-sm max-w-none rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                  <EditorComponent
+                    key={form.id || "ai-update-" + Date.now()} // Using a dynamic key helps force re-render when AI content arrives
+                    content={form.description}
+                    onChange={(html) => setForm({ ...form, description: html })}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-widest font-bold">
+                  AI will focus on action verbs and impact metrics
+                </p>
               </div>
 
               <button

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
-import { ArrowLeft, Save, Upload, User, Mail, Phone, MapPin, Linkedin, Github, Briefcase } from "lucide-react";
+import { ArrowLeft, Save, Upload, User, Mail, Phone, MapPin, Linkedin, Github, Briefcase, Sparkles, Loader2 } from "lucide-react";
 
 export default function ResumeForm() {
   const [form, setForm] = useState({
@@ -18,6 +18,7 @@ export default function ResumeForm() {
   });
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -42,6 +43,34 @@ export default function ResumeForm() {
       setForm((prev) => ({ ...prev, profileImage: reader.result as string }));
     };
     reader.readAsDataURL(file);
+  }
+
+  async function handleAiOptimize() {
+    if (!form.careerSummary || !form.position) {
+      return alert("Please enter your Target Position and a rough draft of your summary first.");
+    }
+
+    setIsAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "summary",
+          content: form.careerSummary,
+          position: form.position
+        }),
+      });
+
+      const data = await res.json();
+      if (data.suggestion) {
+        setForm({ ...form, careerSummary: data.suggestion });
+      }
+    } catch (err) {
+      alert("AI optimization failed.");
+    } finally {
+      setIsAiLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -91,7 +120,7 @@ export default function ResumeForm() {
 
       <div className="max-w-4xl mx-auto px-6 mt-8">
         <form id="resume-form" onSubmit={handleSubmit} className="space-y-8">
-          
+
           {/* Section 1: Profile Image */}
           <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">Profile Picture</h2>
@@ -128,12 +157,12 @@ export default function ResumeForm() {
           <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">Primary Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField label="Full Name" icon={<User size={18}/>} value={form.fullName} onChange={(v) => setForm({...form, fullName: v})} />
-              <InputField label="Current Position" icon={<Briefcase size={18}/>} value={form.position} onChange={(v) => setForm({...form, position: v})} />
-              <InputField label="Email Address" icon={<Mail size={18}/>} value={form.email} onChange={(v) => setForm({...form, email: v})} />
-              <InputField label="Phone Number" icon={<Phone size={18}/>} value={form.phone} onChange={(v) => setForm({...form, phone: v})} />
+              <InputField label="Full Name" icon={<User size={18} />} value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} />
+              <InputField label="Current Position" icon={<Briefcase size={18} />} value={form.position} onChange={(v) => setForm({ ...form, position: v })} />
+              <InputField label="Email Address" icon={<Mail size={18} />} value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+              <InputField label="Phone Number" icon={<Phone size={18} />} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
               <div className="md:col-span-2">
-                <InputField label="Address" icon={<MapPin size={18}/>} value={form.address} onChange={(v) => setForm({...form, address: v})} />
+                <InputField label="Address" icon={<MapPin size={18} />} value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
               </div>
             </div>
           </section>
@@ -142,14 +171,29 @@ export default function ResumeForm() {
           <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">Social Links</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField label="LinkedIn URL" icon={<Linkedin size={18}/>} value={form.linkedin} onChange={(v) => setForm({...form, linkedin: v})} />
-              <InputField label="GitHub URL" icon={<Github size={18}/>} value={form.github} onChange={(v) => setForm({...form, github: v})} />
+              <InputField label="LinkedIn URL" icon={<Linkedin size={18} />} value={form.linkedin} onChange={(v) => setForm({ ...form, linkedin: v })} />
+              <InputField label="GitHub URL" icon={<Github size={18} />} value={form.github} onChange={(v) => setForm({ ...form, github: v })} />
             </div>
           </section>
 
           {/* Section 4: Summary */}
           <section className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">Professional Summary</h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">Professional Summary</h2>
+              <button
+                type="button"
+                onClick={handleAiOptimize}
+                disabled={isAiLoading}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-md transition-all disabled:opacity-50"
+              >
+                {isAiLoading ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Sparkles size={12} />
+                )}
+                {isAiLoading ? "Writing..." : "AI Optimize"}
+              </button>
+            </div>
             <textarea
               rows={6}
               value={form.careerSummary || ""}
