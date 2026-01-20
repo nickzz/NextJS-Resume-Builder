@@ -14,6 +14,7 @@ model User {
   password      String?   // For credentials login
   image         String?
   resumes       Resume?
+  generatedResumes GeneratedResume[]
 }
 
 model Resume {
@@ -37,6 +38,7 @@ model Resume {
   languages     Language[]
   references    Reference[]
   skills        Skill[]
+  generatedResumes GeneratedResume[]
 }
 
 model Experience {
@@ -107,4 +109,15 @@ model Reference {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model GeneratedResume {
+  id          String   @id @default(cuid())
+  resumeId    String
+  userId      String
+  theme       String
+  jsonContent Json     // Stores the snapshot of the JSON Resume data
+  createdAt   DateTime @default(now())
+  resume      Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
